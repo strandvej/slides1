@@ -1,0 +1,129 @@
+---
+title       : Ordered Models 
+subtitle    : Logit / Probit 
+author      : William Reed
+job         : 
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : mathjax            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+github:
+user: strandvej
+repo: slides1
+
+
+--- 
+
+## Models To Be Considered
+
+ > - Ordered Logit
+ > - Ordered Probit
+--- .build 
+
+
+--- 
+## R Examples
+```{r, echo=FALSE, eval=TRUE} 
+library(foreign)
+war<-read.dta("http://willreed.org/1perwar.dta")
+library(MASS)
+library(vioplot)
+```
+---
+
+---
+```{r}
+cdplot(war$outcome~war$months, ylab="Ouctome",xlab="Months")
+```
+---
+
+
+---
+Ordered Logit
+
+```{r}
+summary(m <- polr(outcome ~ months, data = war, Hess=TRUE, method="logistic"))
+```
+---
+
+---
+Ordered Probit
+
+```{r}
+summary(m <- polr(outcome ~ months, data = war, Hess=TRUE, method="probit"))
+```
+---
+
+---
+```{r}
+m.pred <- predict(m, type="probs")
+summary(m.pred)
+
+```
+---
+
+
+---
+```{r}
+beta<-c(m$coefficients,m$zeta)
+beta
+vcov(m)
+
+```
+---
+
+---
+```{r,eval=FALSE}
+library(MASS)
+n.draws <- 1000
+set.seed(123)
+sim.coefs <- rmvnorm(n.draws, beta, vcov(m))
+```
+---
+
+
+---
+```{r, eval=FALSE}
+n.obs <- length(war[[1]])
+for(i in 1:n.draws){
+  # For the current set of coefficients, calculate a
+  # latent probability for all observations using observed values
+  # first, set up vectors to store our linear predictors
+  
+ 
+  Xb.1 <- numeric(n.obs) # Cut point 1
+  Xb.2 <- numeric(n.obs) # Cut point 2
+  Xb.3  <- numeric(n.obs) # Cut point 3
+  
+  for(j in 1:n.obs){
+  Xb.1[j] <- sim.coefs[i,2]*1+sim.coefs[i,1]*10 #Cutpoint 1 turned on
+  Xb.2[j] <- sim.coefs[i,3]*1+sim.coefs[i,1]*10 #Cutpoint 2 turned on
+  Xb.3[j] <- sim.coefs[i,4]*1+sim.coefs[i,1]*10 #Cubpoint 3 turned on
+  }
+```
+---
+
+---
+```{r, eval=FALSE}
+ #probability of being in category 1-4
+  p1=plogis(Xb.1)
+  p2=plogis(Xb.2)-plogis(Xb.1)
+  p3=plogis(Xb.3)-plogis(Xb.2)
+  p4=1-plogis(Xb.3)
+ 
+   ####average probability across all observations####
+  p.1[i]<-mean(p1)
+  p.2[i]<-mean(p2)
+  p.3[i]<-mean(p3)
+  p.4[i]<-mean(p4)
+}
+
+
+
+```
+---
+
+
+
